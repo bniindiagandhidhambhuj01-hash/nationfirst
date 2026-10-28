@@ -1,0 +1,81 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Event Seating Manager</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f27;--mu:#6b7280;--bd:#d9dde4;--free:#e8f6ee;--freeb:#2f9e62;--part:#fff4dc;--partb:#d68a00;--full:#fde8e8;--fullb:#d64545;--ac:#3b4ee0;--acx:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161b;--card:#1d2027;--tx:#eceef2;--mu:#98a0ad;--bd:#343945;--free:#16301f;--part:#352a10;--full:#3a1a1a;--ac:#7585ff;--acx:#10131c}}
+:root[data-theme="dark"]{--bg:#14161b;--card:#1d2027;--tx:#eceef2;--mu:#98a0ad;--bd:#343945;--free:#16301f;--part:#352a10;--full:#3a1a1a;--ac:#7585ff;--acx:#10131c}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;padding:16px;max-width:1100px;margin-inline:auto}
+h1{font-size:20px;margin:0}h2{font-size:15px;margin:22px 0 8px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+input,button{font:inherit;color:var(--tx)}
+input{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%}
+button{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.p{background:var(--ac);color:var(--acx);border-color:var(--ac)}button.d{color:var(--fullb)}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+#ev{font-size:20px;font-weight:700;border:none;background:transparent;width:auto;padding:0;max-width:60vw}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 14px}.stat b{font-size:18px;display:block}.stat span{color:var(--mu);font-size:12px}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--mu);margin:6px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;border:1px solid}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.u{border:1.5px solid var(--freeb);background:var(--free);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer}
+.u.part{border-color:var(--partb);background:var(--part)}.u.full{border-color:var(--fullb);background:var(--full)}
+.u b{display:block}.u small{color:var(--mu)}
+#res{background:var(--card);border:1px solid var(--bd);border-radius:10px;margin-top:6px}#res div{padding:8px 12px;border-bottom:1px solid var(--bd);cursor:pointer}#res div:last-child{border:none}
+#m{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
+#m .box{background:var(--bg);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:16px}
+.seat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:8px}
+.seat .r{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.seat .r input{flex:1;min-width:120px}
+.pass{display:inline-block;background:var(--ac);color:var(--acx);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600}
+#pass{display:none}
+@media print{body>*:not(#pass){display:none!important}#pass{display:block;color:#000;background:#fff;border:3px dashed #000;border-radius:14px;width:340px;margin:20px auto;padding:20px;text-align:center;font-family:system-ui,sans-serif}#pass h3{margin:0 0 4px;font-size:22px}#pass .n{font-size:26px;font-weight:800;margin:10px 0}#pass .no{font:700 20px monospace;letter-spacing:.15em;border-top:2px solid #000;margin-top:12px;padding-top:10px}}
+</style></head><body>
+<div class="top"><input id="ev" aria-label="Event name"><button onclick="toggleTheme()">◐ Theme</button></div>
+<div class="stats"><div class="stat"><b id="s1"></b><span>Seats booked</span></div><div class="stat"><b id="s2"></b><span>Seats free</span></div><div class="stat"><b id="s3"></b><span>Passes issued</span></div></div>
+<input id="q" placeholder="Search guest name, phone or pass no…" oninput="search()"><div id="res" hidden></div>
+<div class="legend"><span><i style="background:var(--free);border-color:var(--freeb)"></i>Free</span><span><i style="background:var(--part);border-color:var(--partb)"></i>Partly booked</span><span><i style="background:var(--full);border-color:var(--fullb)"></i>Full</span></div>
+<h2>Sofas · 24 × 2 seats</h2><div class="grid" id="g1"></div>
+<h2>Tables · 56 × 6 seats</h2><div class="grid" id="g2"></div>
+<div id="m" onclick="if(event.target===this)closeM()"><div class="box" id="mb"></div></div>
+<div id="pass"></div>
+<script>
+const KEY='seating-v1';let db={seats:{},next:1,event:'Event Nation'};let cur=null;
+try{const s=localStorage.getItem(KEY);if(s)db=Object.assign(db,JSON.parse(s))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const units=[];for(let i=1;i<=24;i++)units.push({id:'S'+i,t:'Sofa',n:i,cap:2});for(let i=1;i<=56;i++)units.push({id:'T'+i,t:'Table',n:i,cap:6});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const label=(u,i)=>u.t+' '+u.n+' · Seat '+i;
+const cnt=u=>{let c=0;for(let i=1;i<=u.cap;i++)if(db.seats[u.id+'-'+i])c++;return c};
+function render(){
+ $('ev').value=db.event;let b=0,p=0,tot=0;
+ [['Sofa','g1'],['Table','g2']].forEach(([t,g])=>{$(g).innerHTML=units.filter(u=>u.t===t).map(u=>{const c=cnt(u);return `<div class="u ${c===u.cap?'full':c?'part':''}" onclick="openM('${u.id}')"><b>${u.t[0]==='S'?'Sofa':'Table'} ${u.n}</b><small>${c}/${u.cap}</small></div>`}).join('')});
+ units.forEach(u=>{tot+=u.cap});Object.values(db.seats).forEach(s=>{b++;if(s.pass)p++});
+ $('s1').textContent=b;$('s2').textContent=tot-b;$('s3').textContent=p;
+ if(cur)renderM();
+}
+function openM(id){cur=id;$('m').style.display='flex';renderM()}
+function closeM(){cur=null;$('m').style.display='none'}
+function renderM(){
+ const u=units.find(x=>x.id===cur);let h=`<div class="top"><h1>${u.t} ${u.n}</h1><button onclick="closeM()">Close ✕</button></div>`;
+ for(let i=1;i<=u.cap;i++){const k=u.id+'-'+i,s=db.seats[k];
+  h+=`<div class="seat"><b>Seat ${i}</b> `;
+  if(!s)h+=`<span style="color:var(--mu)">free</span><div class="r"><input id="n${i}" placeholder="Guest name"><input id="p${i}" placeholder="Phone" inputmode="tel"><button class="p" onclick="book('${k}',${i})">Book</button></div>`;
+  else h+=`${s.pass?`<span class="pass">${s.pass}</span>`:''}<div>${esc(s.name)}${s.phone?' · '+esc(s.phone):''}</div><div class="r">${s.pass?`<button onclick="printPass('${k}')">Print pass</button>`:`<button class="p" onclick="issue('${k}')">Issue pass</button>`}<button class="d" onclick="cancel('${k}')">Cancel</button></div>`;
+  h+='</div>'}
+ $('mb').innerHTML=h;
+}
+function book(k,i){const n=$('n'+i).value.trim();if(!n){$('n'+i).focus();return}db.seats[k]={name:n,phone:$('p'+i).value.trim(),pass:null};save();render()}
+function issue(k){db.seats[k].pass='EN-'+String(db.next++).padStart(4,'0');save();render();printPass(k)}
+function cancel(k){delete db.seats[k];save();render()}
+function printPass(k){
+ const s=db.seats[k],u=units.find(x=>x.id===k.split('-')[0]),i=k.split('-')[1];
+ $('pass').innerHTML=`<h3>${esc(db.event)}</h3><div>ENTRY PASS</div><div class="n">${esc(s.name)}</div><div>${u.t} ${u.n} · Seat ${i}</div><div class="no">${s.pass}</div>`;
+ setTimeout(()=>window.print(),50);
+}
+function search(){
+ const q=$('q').value.trim().toLowerCase(),r=$('res');if(!q){r.hidden=true;return}
+ const m=Object.entries(db.seats).filter(([k,s])=>(s.name+' '+s.phone+' '+(s.pass||'')).toLowerCase().includes(q)).slice(0,8);
+ r.hidden=false;r.innerHTML=m.length?m.map(([k,s])=>{const u=units.find(x=>x.id===k.split('-')[0]);return `<div onclick="openM('${u.id}')">${esc(s.name)} — ${label(u,k.split('-')[1])} ${s.pass?'· '+s.pass:''}</div>`}).join(''):'<div>No match</div>';
+}
+$('ev').oninput=e=>{db.event=e.target.value;save()};
+function toggleTheme(){const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()==='#14161b';r.dataset.theme=d?'light':'dark'}
+render();
+</script></body></html>
