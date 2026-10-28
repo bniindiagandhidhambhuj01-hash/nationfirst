@@ -1,44 +1,49 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Event Seating Manager</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f27;--mu:#6b7280;--bd:#d9dde4;--free:#e8f6ee;--freeb:#2f9e62;--part:#fff4dc;--partb:#d68a00;--full:#fde8e8;--fullb:#d64545;--ac:#3b4ee0;--acx:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161b;--card:#1d2027;--tx:#eceef2;--mu:#98a0ad;--bd:#343945;--free:#16301f;--part:#352a10;--full:#3a1a1a;--ac:#7585ff;--acx:#10131c}}
-:root[data-theme="dark"]{--bg:#14161b;--card:#1d2027;--tx:#eceef2;--mu:#98a0ad;--bd:#343945;--free:#16301f;--part:#352a10;--full:#3a1a1a;--ac:#7585ff;--acx:#10131c}
+:root{--bg:#f2f5f3;--card:#fff;--tx:#172923;--mu:#64746d;--bd:#dce5df;--free:#e7f4ec;--freeb:#328153;--part:#fff2d6;--partb:#bb7814;--full:#fce9e7;--fullb:#bd4d43;--ac:#176b50;--acx:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="dark"]{--bg:#141d1a;--card:#1d2924;--tx:#edf4ef;--mu:#a4b4aa;--bd:#35453d;--free:#1b3527;--part:#3a301b;--full:#3b2422;--ac:#79c49d;--acx:#14231b}
 *{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;padding:16px;max-width:1100px;margin-inline:auto}
-h1{font-size:20px;margin:0}h2{font-size:15px;margin:22px 0 8px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Avenir Next",Avenir,"Segoe UI",sans-serif;padding:28px 20px;max-width:1180px;margin-inline:auto}
+h1{font-size:22px;line-height:1.2;margin:0}h2{font-size:14px;margin:30px 0 4px;color:var(--tx);font-weight:700}.sub{color:var(--mu);font-size:13px;margin:0 0 12px}
 input,button{font:inherit;color:var(--tx)}
-input{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%}
-button{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer}
-button.p{background:var(--ac);color:var(--acx);border-color:var(--ac)}button.d{color:var(--fullb)}
-.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
-#ev{font-size:20px;font-weight:700;border:none;background:transparent;width:auto;padding:0;max-width:60vw}
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 14px}.stat b{font-size:18px;display:block}.stat span{color:var(--mu);font-size:12px}
-.legend{display:flex;gap:12px;font-size:12px;color:var(--mu);margin:6px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;border:1px solid}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
-.u{border:1.5px solid var(--freeb);background:var(--free);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer}
-.u.part{border-color:var(--partb);background:var(--part)}.u.full{border-color:var(--fullb);background:var(--full)}
+input{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:10px 12px;width:100%}
+input:focus{outline:2px solid color-mix(in srgb,var(--ac) 35%,transparent);border-color:var(--ac)}
+button{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:9px 13px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--ac)}button.p{background:var(--ac);color:var(--acx);border-color:var(--ac)}button.d{color:var(--fullb)}
+button:focus-visible,.u:focus-visible{outline:3px solid color-mix(in srgb,var(--ac) 45%,transparent);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px}.brandmark{width:38px;height:38px;border-radius:9px;background:var(--ac);color:var(--acx);display:grid;place-items:center;font-weight:800;font-size:17px}
+.event-wrap{display:grid;gap:2px}.eyebrow{font-size:11px;color:var(--mu);text-transform:uppercase;font-weight:700}
+#ev{font-size:20px;font-weight:700;border:none;background:transparent;width:auto;padding:0;max-width:min(60vw,420px)}
+.actions{display:flex;gap:8px;align-items:center}.saved{font-size:12px;color:var(--mu);white-space:nowrap}.saved:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#328153;margin-right:6px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:25px 0 22px}.stat{background:var(--card);border:1px solid var(--bd);border-radius:7px;padding:15px 17px}.stat b{font-size:25px;line-height:1.2;display:block}.stat span{color:var(--mu);font-size:12px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:8px}.toolbar input{max-width:520px}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:11px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;border:1px solid}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.u{min-height:58px;border:1px solid var(--freeb);background:var(--free);border-radius:6px;padding:9px 4px;text-align:center;cursor:pointer;color:var(--tx)}
+.u:hover{transform:translateY(-1px);box-shadow:0 3px 10px #17372818}.u.part{border-color:var(--partb);background:var(--part)}.u.full{border-color:var(--fullb);background:var(--full)}
 .u b{display:block}.u small{color:var(--mu)}
-#res{background:var(--card);border:1px solid var(--bd);border-radius:10px;margin-top:6px}#res div{padding:8px 12px;border-bottom:1px solid var(--bd);cursor:pointer}#res div:last-child{border:none}
-#m{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
-#m .box{background:var(--bg);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:16px}
-.seat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:8px}
-.seat .r{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.seat .r input{flex:1;min-width:120px}
-.pass{display:inline-block;background:var(--ac);color:var(--acx);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600}
+#res{background:var(--card);border:1px solid var(--bd);border-radius:6px;margin-top:6px;max-width:520px}#res div{padding:9px 12px;border-bottom:1px solid var(--bd);cursor:pointer}#res div:last-child{border:none}
+#m{position:fixed;inset:0;background:#10201999;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
+#m .box{background:var(--bg);border:1px solid var(--bd);border-radius:9px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:18px}
+.seat{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:11px;margin-top:8px}
+.seat .r{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}.seat .r input{flex:1;min-width:120px}
+.pass{display:inline-block;background:var(--ac);color:var(--acx);border-radius:4px;padding:1px 8px;font-size:12px;font-weight:600}
 #pass{display:none}
+@media(max-width:620px){body{padding:20px 14px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px}.stat b{font-size:22px}.top{align-items:flex-start}.actions{width:100%;flex-wrap:wrap}.saved{margin-right:auto}.toolbar{align-items:stretch;flex-direction:column}.toolbar input{max-width:none}#ev{max-width:72vw}}
 @media print{body>*:not(#pass){display:none!important}#pass{display:block;color:#000;background:#fff;border:3px dashed #000;border-radius:14px;width:340px;margin:20px auto;padding:20px;text-align:center;font-family:system-ui,sans-serif}#pass h3{margin:0 0 4px;font-size:22px}#pass .n{font-size:26px;font-weight:800;margin:10px 0}#pass .no{font:700 20px monospace;letter-spacing:.15em;border-top:2px solid #000;margin-top:12px;padding-top:10px}}
 </style></head><body>
-<div class="top"><input id="ev" aria-label="Event name"><button onclick="toggleTheme()">◐ Theme</button></div>
-<div class="stats"><div class="stat"><b id="s1"></b><span>Seats booked</span></div><div class="stat"><b id="s2"></b><span>Seats free</span></div><div class="stat"><b id="s3"></b><span>Passes issued</span></div></div>
-<input id="q" placeholder="Search guest name, phone or pass no…" oninput="search()"><div id="res" hidden></div>
+<header class="top"><div class="brand"><div class="brandmark" aria-hidden="true">N</div><div class="event-wrap"><span class="eyebrow">SEATING MANAGER</span><input id="ev" aria-label="Event name"></div></div><div class="actions"><span class="saved" id="saved" role="status">Saved on this device</span><button onclick="toggleTheme()" aria-label="Toggle color theme">◐ Theme</button><button class="p" onclick="exportSeats()" aria-label="Export all seats to an Excel-compatible file">↓ Export Excel</button></div></header>
+<div class="stats"><div class="stat"><b id="s1"></b><span>Seats booked</span></div><div class="stat"><b id="s2"></b><span>Seats available</span></div><div class="stat"><b id="s3"></b><span>Passes issued</span></div><div class="stat"><b id="s4"></b><span>Occupancy</span></div></div>
+<div class="toolbar"><input id="q" placeholder="Search guest name, phone or pass number..." aria-label="Search bookings" oninput="search()"></div><div id="res" hidden></div>
 <div class="legend"><span><i style="background:var(--free);border-color:var(--freeb)"></i>Free</span><span><i style="background:var(--part);border-color:var(--partb)"></i>Partly booked</span><span><i style="background:var(--full);border-color:var(--fullb)"></i>Full</span></div>
-<h2>Sofas · 24 × 2 seats</h2><div class="grid" id="g1"></div>
-<h2>Tables · 56 × 6 seats</h2><div class="grid" id="g2"></div>
+<h2>Sofas</h2><p class="sub">24 units · 2 seats each</p><div class="grid" id="g1"></div>
+<h2>Tables</h2><p class="sub">56 units · 6 seats each</p><div class="grid" id="g2"></div>
 <div id="m" onclick="if(event.target===this)closeM()"><div class="box" id="mb"></div></div>
 <div id="pass"></div>
 <script>
 const KEY='seating-v1';let db={seats:{},next:1,event:'Event Nation'};let cur=null;
 try{const s=localStorage.getItem(KEY);if(s)db=Object.assign(db,JSON.parse(s))}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db));$('saved').textContent='Saved on this device'}catch(e){$('saved').textContent='Could not save changes'}};
 const units=[];for(let i=1;i<=24;i++)units.push({id:'S'+i,t:'Sofa',n:i,cap:2});for(let i=1;i<=56;i++)units.push({id:'T'+i,t:'Table',n:i,cap:6});
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -48,7 +53,7 @@ function render(){
  $('ev').value=db.event;let b=0,p=0,tot=0;
  [['Sofa','g1'],['Table','g2']].forEach(([t,g])=>{$(g).innerHTML=units.filter(u=>u.t===t).map(u=>{const c=cnt(u);return `<div class="u ${c===u.cap?'full':c?'part':''}" onclick="openM('${u.id}')"><b>${u.t[0]==='S'?'Sofa':'Table'} ${u.n}</b><small>${c}/${u.cap}</small></div>`}).join('')});
  units.forEach(u=>{tot+=u.cap});Object.values(db.seats).forEach(s=>{b++;if(s.pass)p++});
- $('s1').textContent=b;$('s2').textContent=tot-b;$('s3').textContent=p;
+ $('s1').textContent=b;$('s2').textContent=tot-b;$('s3').textContent=p;$('s4').textContent=tot?Math.round(b/tot*100)+'%':'0%';
  if(cur)renderM();
 }
 function openM(id){cur=id;$('m').style.display='flex';renderM()}
@@ -74,6 +79,14 @@ function search(){
  const q=$('q').value.trim().toLowerCase(),r=$('res');if(!q){r.hidden=true;return}
  const m=Object.entries(db.seats).filter(([k,s])=>(s.name+' '+s.phone+' '+(s.pass||'')).toLowerCase().includes(q)).slice(0,8);
  r.hidden=false;r.innerHTML=m.length?m.map(([k,s])=>{const u=units.find(x=>x.id===k.split('-')[0]);return `<div onclick="openM('${u.id}')">${esc(s.name)} — ${label(u,k.split('-')[1])} ${s.pass?'· '+s.pass:''}</div>`}).join(''):'<div>No match</div>';
+}
+function exportSeats(){
+ const quote=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
+ const rows=[['Event','Seat type','Unit','Seat','Status','Guest name','Phone','Pass number']];
+ units.forEach(u=>{for(let i=1;i<=u.cap;i++){const s=db.seats[u.id+'-'+i];rows.push([db.event,u.t,u.n,i,s?'Booked':'Available',s?.name||'',s?.phone||'',s?.pass||''])}});
+ const csv='\uFEFF'+rows.map(row=>row.map(quote).join(',')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+ const link=document.createElement('a');link.href=url;link.download=(db.event||'event').replace(/[^a-z0-9_-]+/gi,'_')+'_all_seats.csv';link.click();URL.revokeObjectURL(url);
 }
 $('ev').oninput=e=>{db.event=e.target.value;save()};
 function toggleTheme(){const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()==='#14161b';r.dataset.theme=d?'light':'dark'}
