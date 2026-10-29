@@ -4,7 +4,7 @@ The app can run as a static page, but shared bookings require a Vercel deploymen
 
 ## Floor planner
 
-The interactive floor plan starts with 24 two-seat sofas and 56 six-seat tables. Switch between the complete, sofa, and table views; zoom, select, and edit furniture; or restore the original arrangement. Layout changes and seat-count settings are saved in the current browser. PNG and summary downloads reflect the current layout. Use **PDF / Print** to print the floor plan or save it as a PDF from the browser’s print dialog.
+The interactive floor plan starts with 24 two-seat sofas and 56 six-seat tables. Click an available seat indicator to book one guest by name; booked seats and furniture are highlighted. Sign in with organizer access to collect and view a guest’s private phone number. Switch between the complete, sofa, and table views; zoom, edit furniture; or restore the original arrangement. Layout changes and seat-count settings are saved in the current browser. PNG and summary downloads reflect the current layout. Use **PDF / Print** to print the floor plan or save it as a PDF from the browser’s print dialog.
 
 Floor-plan edits are separate from guest bookings, which continue to use the original 24-sofa and 56-table booking inventory. Shared bookings still require the Vercel and Upstash setup below.
 

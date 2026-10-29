@@ -14,8 +14,10 @@ let planView = 'complete';
 let planZoom = 1;
 let editMode = false;
 let selectedFurniture = null;
+let selectedSeat = null;
 let draggedFurniture = null;
 const bookingSeatData = () => typeof db === 'undefined' ? {} : db.seats;
+const organizerAccess = () => typeof isAdmin !== 'undefined' && isAdmin;
 
 function validPlan(value) {
   if (!value || typeof value !== 'object' || !Array.isArray(value.sofas) || !Array.isArray(value.tables) || !value.seats) return false;
@@ -149,7 +151,34 @@ function resetPlan() {
 
 function selectFurniture(id) {
   selectedFurniture = id;
+  selectedSeat = null;
   renderPlanner();
+}
+
+function selectPlanSeat(event, id, seatNumber) {
+  event.stopPropagation();
+  if (editMode) return;
+  selectedFurniture = id;
+  selectedSeat = seatNumber;
+  renderPlanner();
+  if (window.matchMedia('(max-width: 760px)').matches) {
+    document.querySelector('.detail-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function isBookableSeat(id, seatNumber) {
+  const unit = typeof units === 'undefined' ? null : units.find(item => item.id === id);
+  return Boolean(unit && seatNumber >= 1 && seatNumber <= unit.cap);
+}
+
+function seatIndicatorMarkup(item, seatNumber, isSofa) {
+  const seatKey = `${item.id}-${seatNumber}`;
+  const booking = bookingSeatData()[seatKey];
+  const state = booking ? 'booked' : 'available';
+  const name = booking ? `, booked by ${booking.name}` : ', available';
+  const typeClass = isSofa ? 'sofa-cushion' : 'table-seat';
+  const angle = isSofa ? '' : ` style="--seat-angle:${360 * (seatNumber - 1) / (plan.seats.tables || 1)}deg"`;
+  return `<button type="button" class="seat-indicator ${typeClass} ${state}${selectedFurniture === item.id && selectedSeat === seatNumber ? ' focused' : ''}" aria-label="Seat ${seatNumber}${name}" title="Seat ${seatNumber}${name}" onclick="selectPlanSeat(event,'${item.id}',${seatNumber})"${angle}></button>`;
 }
 
 function furnitureMarkup(item, index) {
@@ -158,9 +187,10 @@ function furnitureMarkup(item, index) {
   const bookingSeats = bookingSeatData();
   const occupied = Object.keys(bookingSeats).filter(key => key.startsWith(`${item.id}-`)).length;
   const seatsMarkup = sofa
-    ? `<span class="sofa-visual" style="--seat-count:${seats}">${Array.from({ length: seats }, () => '<i class="sofa-cushion"></i>').join('')}</span>`
-    : `<span class="table-visual" style="--seat-count:${seats}"><i class="table-top"></i>${Array.from({ length: seats }, (_, index) => `<i class="table-seat" style="--seat-angle:${360 * index / seats}deg"></i>`).join('')}</span>`;
-  return `<button class="furniture-item ${sofa ? 'sofa-item' : 'table-item'}${selectedFurniture === item.id ? ' selected' : ''}${draggedFurniture === item.id ? ' dragging' : ''}" draggable="${editMode}" data-type="${item.type}" data-index="${index}" aria-pressed="${selectedFurniture === item.id}" aria-label="${sofa ? 'Sofa' : 'Table'} ${item.id.slice(1)}, ${seats} seats${occupied ? `, ${occupied} booked` : ''}" onclick="selectFurniture('${item.id}')" ondragstart="startFurnitureDrag(event,'${item.id}')" ondragend="endFurnitureDrag()" ondragover="allowFurnitureDrop(event)" ondrop="dropFurniture(event,'${item.type}',${index})">${seatsMarkup}<span class="furniture-label">${sofa ? 'Sofa' : 'Table'} ${item.id.slice(1)}</span><span class="furniture-capacity">${seats} seats</span>${occupied ? `<span class="booking-mark">${occupied} booked</span>` : ''}</button>`;
+    ? `<span class="sofa-visual" style="--seat-count:${seats}">${Array.from({ length: seats }, (_, seat) => seatIndicatorMarkup(item, seat + 1, true)).join('')}</span>`
+    : `<span class="table-visual" style="--seat-count:${seats}"><i class="table-top"></i>${Array.from({ length: seats }, (_, seat) => seatIndicatorMarkup(item, seat + 1, false)).join('')}</span>`;
+  const fullyBooked = occupied >= seats;
+  return `<div class="furniture-item ${sofa ? 'sofa-item' : 'table-item'}${occupied ? ' has-bookings' : ''}${fullyBooked ? ' fully-booked' : ''}${selectedFurniture === item.id ? ' selected' : ''}${draggedFurniture === item.id ? ' dragging' : ''}" draggable="${editMode}" data-type="${item.type}" data-index="${index}" role="group" aria-label="${sofa ? 'Sofa' : 'Table'} ${item.id.slice(1)}, ${seats} seats${occupied ? `, ${occupied} booked` : ''}" onclick="selectFurniture('${item.id}')" ondragstart="startFurnitureDrag(event,'${item.id}')" ondragend="endFurnitureDrag()" ondragover="allowFurnitureDrop(event)" ondrop="dropFurniture(event,'${item.type}',${index})">${seatsMarkup}<span class="furniture-label">${sofa ? 'Sofa' : 'Table'} ${item.id.slice(1)}</span><span class="furniture-capacity">${seats - occupied} available · ${seats} seats</span>${occupied ? `<span class="booking-mark">${occupied} booked</span>` : ''}</div>`;
 }
 
 function renderSofas() {
@@ -190,13 +220,54 @@ function renderDetails() {
   actions.hidden = !item || !editMode;
   if (!item) {
     detail.className = 'selection-empty';
-    detail.textContent = 'Select a sofa or table to see its seating details.';
+    detail.textContent = 'Select an available seat to book one guest at a time.';
     return;
   }
   const isSofa = item.type === 'sofa';
   const capacity = plan.seats[isSofa ? 'sofas' : 'tables'];
+  const bookings = bookingSeatData();
+  const bookingCapacity = isSofa ? 2 : 6;
+  const currentBooking = selectedSeat ? bookings[`${item.id}-${selectedSeat}`] : null;
+  const bookable = selectedSeat && selectedSeat <= bookingCapacity && isBookableSeat(item.id, selectedSeat);
   detail.className = '';
-  detail.innerHTML = `<div class="selection-title">${isSofa ? 'Sofa' : 'Table'} ${item.id.slice(1)}</div><div class="selection-type">${isSofa ? 'Lounge seating' : 'Round-table seating'} · ${capacity} seats</div><div class="selection-seats" aria-label="${capacity} individual seats">${Array.from({ length: capacity }, () => `<i class="selection-seat${isSofa ? '' : ' table'}"></i>`).join('')}</div>`;
+  const seatButtons = Array.from({ length: capacity }, (_, index) => {
+    const seatNumber = index + 1;
+    const booking = bookings[`${item.id}-${seatNumber}`];
+    return `<button type="button" class="selection-seat ${isSofa ? '' : 'table'}${booking ? ' booked' : ''}${selectedSeat === seatNumber ? ' focused' : ''}" aria-label="Seat ${seatNumber}${booking ? ` booked by ${booking.name}` : ' available'}" onclick="selectPlanSeat(event,'${item.id}',${seatNumber})">${seatNumber}</button>`;
+  }).join('');
+  let bookingPanel = '';
+  if (selectedSeat && currentBooking) {
+    bookingPanel = `<div class="booking-status is-booked"><b>Seat ${selectedSeat} is booked</b><span>${esc(currentBooking.name)}${organizerAccess() && currentBooking.phone ? ` · ${esc(currentBooking.phone)}` : ''}</span><button type="button" onclick="openM('${item.id}')">Manage booking</button></div>`;
+  } else if (selectedSeat && !bookable) {
+    bookingPanel = `<div class="booking-status"><b>Seat ${selectedSeat} isn’t in the booking inventory</b><span>Bookings use the original 2-seat sofa and 6-seat table capacities.</span></div>`;
+  } else if (selectedSeat && bookable && !editMode) {
+    bookingPanel = `<form class="quick-booking" onsubmit="bookPlanSeat(event)"><b>Book seat ${selectedSeat} · one guest</b><label>Guest name<input id="planGuestName" name="guestName" autocomplete="name" maxlength="120" placeholder="Enter guest name" required></label>${organizerAccess() ? '<label>Guest phone number <input id="planGuestPhone" name="guestPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="40" placeholder="Enter phone number"></label>' : '<p class="phone-access-note">Guest phone numbers are only visible to signed-in organizers.</p>'}<button type="submit" class="p">Book this seat</button></form>`;
+  }
+  detail.innerHTML = `<div class="selection-title">${isSofa ? 'Sofa' : 'Table'} ${item.id.slice(1)}</div><div class="selection-type">${isSofa ? 'Lounge seating' : 'Round-table seating'} · ${capacity} seats</div><div class="selection-seats" aria-label="${capacity} selectable seats">${seatButtons}</div><div class="seat-guide"><span><i class="seat-key available"></i>Available</span><span><i class="seat-key booked"></i>Booked</span></div>${bookingPanel}`;
+}
+
+function bookPlanSeat(event) {
+  event.preventDefault();
+  if (!selectedFurniture || !selectedSeat || editMode) return;
+  const seatKey = `${selectedFurniture}-${selectedSeat}`;
+  if (!isBookableSeat(selectedFurniture, selectedSeat) || bookingSeatData()[seatKey]) {
+    renderPlanner();
+    return;
+  }
+  const nameInput = document.getElementById('planGuestName');
+  const name = nameInput.value.trim();
+  if (!name) {
+    nameInput.focus();
+    return;
+  }
+  const phoneInput = document.getElementById('planGuestPhone');
+  db.seats[seatKey] = {
+    name,
+    phone: organizerAccess() && phoneInput ? phoneInput.value.trim() : '',
+    pass: null
+  };
+  save();
+  render();
 }
 
 function renderPlanner() {
