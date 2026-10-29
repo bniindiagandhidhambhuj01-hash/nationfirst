@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Event Seating Manager</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Event Seating Planner | Nation First</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--tx:#15294b;--mu:#718096;--bd:#e2e8f0;--free:#edf8f1;--freeb:#38845a;--part:#fff6e8;--partb:#d48a24;--full:#fff0ee;--fullb:#c75a4c;--ac:#092e62;--acx:#fff;--accent:#ee741b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 :root[data-theme="dark"]{--bg:#111a2b;--card:#1a2740;--tx:#f0f4fc;--mu:#a5b1c6;--bd:#2b3a56;--free:#1d382b;--part:#3f321d;--full:#402522;--ac:#244c83;--acx:#fff;--accent:#ff9850}
@@ -33,21 +33,87 @@ button:focus-visible,.u:focus-visible{outline:3px solid color-mix(in srgb,var(--
 @media(max-width:760px){body{padding:18px 14px}.top{align-items:flex-start;padding:15px}.brand{gap:13px}.brand-logo{width:124px;max-height:62px}.actions{width:100%;flex-wrap:wrap}.saved{margin-right:auto}.stats{gap:9px}.stat{padding:14px}.stat b{font-size:25px}.toolbar{align-items:stretch;flex-direction:column}.toolbar input{max-width:none}.section-title .sub{margin-left:0}}
 @media(max-width:440px){.brand{width:100%;align-items:center}.brand-logo{width:112px}.event-wrap{min-width:0;flex:1}#ev{max-width:100%;font-size:17px}.actions button{padding:9px 10px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px}.stat b{font-size:23px}.grid{grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}.sofa-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
 @media print{body>*:not(#pass){display:none!important}#pass{display:block;color:#000;background:#fff;border:3px dashed #000;border-radius:14px;width:340px;margin:20px auto;padding:20px;text-align:center;font-family:system-ui,sans-serif}#pass h3{margin:0 0 4px;font-size:22px}#pass .n{font-size:26px;font-weight:800;margin:10px 0}#pass .no{font:700 20px monospace;letter-spacing:.15em;border-top:2px solid #000;margin-top:12px;padding-top:10px}}
-</style></head><body>
-<header class="top"><div class="brand"><img class="brand-logo" src="NATION%20FIRST%20SPONSORS.png" alt="Nation First"><div class="event-wrap"><span class="eyebrow">SEATING MANAGER</span><input id="ev" aria-label="Event name"></div></div><div class="actions"><span class="saved" id="saved" role="status">Saved on this device</span><button onclick="toggleTheme()" aria-label="Toggle color theme">◐ Theme</button><button class="p" onclick="exportSeats()" aria-label="Export all seats to an Excel-compatible file">↓ Export Excel</button></div></header>
-<div class="stats"><div class="stat"><b id="s1"></b><span>Seats booked</span></div><div class="stat"><b id="s2"></b><span>Seats available</span></div><div class="stat"><b id="s3"></b><span>Passes issued</span></div><div class="stat"><b id="s4"></b><span>Occupancy</span></div></div>
-<div class="toolbar"><input id="q" placeholder="Search guest name, phone or pass number..." aria-label="Search bookings" oninput="search()"></div><div id="res" hidden></div>
+</style><link rel="stylesheet" href="planner.css"></head><body>
+<header class="top"><div class="brand"><img class="brand-logo" src="NATION%20FIRST%20SPONSORS.png" alt="Nation First"><div class="event-wrap"><span class="eyebrow">SEATING MANAGER</span><input id="ev" aria-label="Event name"></div></div><div class="actions"><span class="saved" id="saved" role="status">Connecting to shared server…</span><button id="organizer" onclick="toggleOrganizer()">Organizer access</button><button onclick="toggleTheme()" aria-label="Toggle color theme">◐ Theme</button><button class="p" onclick="exportSeats()" aria-label="Export all seats to an Excel-compatible file">↓ Export Excel</button></div></header>
+<section class="stats planner-stats" aria-label="Seating capacity">
+ <div class="stat"><b id="statSofas">24</b><span>Total sofas</span></div>
+ <div class="stat"><b id="statSofaSeats">2</b><span>Seats per sofa</span></div>
+ <div class="stat"><b id="statSofaCapacity">48</b><span>Sofa capacity</span></div>
+ <div class="stat"><b id="statTables">56</b><span>Total tables</span></div>
+ <div class="stat"><b id="statTableSeats">6</b><span>Seats per table</span></div>
+ <div class="stat"><b id="statTableCapacity">336</b><span>Table capacity</span></div>
+ <div class="stat stat-total"><b id="statTotal">384</b><span>Total seating capacity</span></div>
+</section>
+<main class="planner">
+ <div class="planner-heading"><div><span class="eyebrow">EVENT FLOOR PLAN</span><h1>Seating layout</h1><p class="sub">Plan every seat, from the first sofa to the last table.</p></div><div class="planner-exports"><button onclick="downloadSummary()">↓ Summary</button><button onclick="downloadPlanPng()">↓ PNG</button><button onclick="printPlan()">⇧ PDF / Print</button><button class="p" onclick="togglePresentation()">⛶ Present</button></div></div>
+ <div class="planner-toolbar">
+  <div class="view-switch" role="group" aria-label="Floor plan view">
+   <button class="view-button active" data-view="complete" onclick="setPlanView('complete')">Complete layout</button>
+   <button class="view-button" data-view="sofas" onclick="setPlanView('sofas')">Sofa layout</button>
+   <button class="view-button" data-view="tables" onclick="setPlanView('tables')">Table layout</button>
+  </div>
+  <div class="planner-tools"><button id="editToggle" onclick="toggleEditMode()">✎ Edit layout</button><button aria-label="Zoom out" onclick="changeZoom(-0.1)">−</button><span id="zoomLabel">100%</span><button aria-label="Zoom in" onclick="changeZoom(0.1)">+</button><button onclick="resetPlan()">↺ Reset</button></div>
+ </div>
+ <div class="edit-panel" id="editPanel" hidden>
+  <label>Seats per sofa <input id="sofaSeatInput" type="number" min="1" max="12" value="2"></label>
+  <label>Seats per table <input id="tableSeatInput" type="number" min="1" max="12" value="6"></label>
+  <button onclick="addFurniture('sofa')">＋ Add sofa</button><button onclick="addFurniture('table')">＋ Add table</button>
+  <span class="edit-hint">Drag furniture to reposition, or select it and use the arrow controls.</span>
+ </div>
+ <div class="planner-content">
+  <section class="floor-card" aria-label="Interactive seating floor plan">
+   <div class="floor-card-heading"><div><h2 id="floorTitle">Complete event layout</h2><p class="sub" id="floorSubtitle">3 sofa rows · 8 tables per row</p></div><span class="saved-local" id="planSaved">Saved on this device</span></div>
+   <div class="floor-scroll" id="floorScroll"><div class="floor-inner" id="floorPlan"><section class="plan-section" id="sofaSection"><h3 class="plan-section-title">Sofas</h3><div class="section-rows"></div></section><section class="plan-section" id="tableSection"><h3 class="plan-section-title">Tables</h3><div class="section-rows"></div></section></div></div>
+   <div class="floor-legend"><span><i class="legend-sofa"></i>Sofa</span><span><i class="legend-table"></i>Table</span><span><i class="legend-seat"></i>Individual seat</span><span><i class="legend-row"></i>Row label</span><span><i class="legend-gap"></i>Central aisle</span></div>
+  </section>
+  <aside class="detail-card" aria-label="Selected furniture details">
+   <span class="eyebrow">FURNITURE DETAILS</span><div id="selectionDetails" class="selection-empty">Select a sofa or table to see its seating details.</div>
+   <div class="detail-actions" id="detailActions" hidden><button aria-label="Move furniture earlier in row" onclick="moveSelected(-1)">← Move</button><button aria-label="Move furniture later in row" onclick="moveSelected(1)">Move →</button><button class="d" onclick="removeSelected()">Remove</button></div>
+   <div class="capacity-summary"><div><span>Plan utilization</span><b id="planUtilization">80 units</b></div><div><span>Seats available</span><b id="planSeats">384</b></div></div>
+   <p class="detail-note">Your layout is saved automatically on this device. Use reset to restore the original 24-sofa, 56-table arrangement.</p>
+  </aside>
+ </div>
+</main>
+<section class="booking-manager"><div class="booking-heading"><div><span class="eyebrow">GUEST MANAGEMENT</span><h2>Seat bookings</h2><p class="sub">Manage reservations and issue guest passes. Bookings use the original 24-sofa, 56-table inventory.</p></div></div>
+<div class="stats booking-stats"><div class="stat"><b id="s1"></b><span>Seats booked</span></div><div class="stat"><b id="s2"></b><span>Seats available</span></div><div class="stat"><b id="s3"></b><span>Passes issued</span></div><div class="stat"><b id="s4"></b><span>Occupancy</span></div></div>
+<div class="toolbar"><input id="q" placeholder="Search guest name or pass number..." aria-label="Search bookings" oninput="search()"></div><div id="res" hidden></div>
 <div class="legend"><span><i style="background:var(--free);border-color:var(--freeb)"></i>Free</span><span><i style="background:var(--part);border-color:var(--partb)"></i>Partly booked</span><span><i style="background:var(--full);border-color:var(--fullb)"></i>Full</span></div>
 <div class="section-title"><h2>Sofas</h2><p class="sub">24 units · 2 seats each</p></div><div class="sofa-layout" id="g1"></div>
 <div class="section-title"><h2>Tables</h2><p class="sub">56 units · 6 seats each</p></div><div class="grid" id="g2"></div>
+</section>
 <div id="m" onclick="if(event.target===this)closeM()"><div class="box" id="mb"></div></div>
 <div id="pass"></div>
 <script>
-const KEY='seating-v1';let db={seats:{},next:1,event:'Event Nation'};let cur=null;
-try{const s=localStorage.getItem(KEY);if(s)db=Object.assign(db,JSON.parse(s))}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db));$('saved').textContent='Saved on this device'}catch(e){$('saved').textContent='Could not save changes'}};
-const units=[];for(let i=1;i<=24;i++)units.push({id:'S'+i,t:'Sofa',n:i,cap:2});for(let i=1;i<=56;i++)units.push({id:'T'+i,t:'Table',n:i,cap:6});
+const KEY='seating-v1';let db={seats:{},next:1,event:'Event Nation'};let cur=null;let remoteReady=false;let serverInitialized=false;let serverVersion=0;let isAdmin=false;let saveQueue=Promise.resolve();let pendingSaves=0;let hasLocalData=false;let localHasPhones=false;let hasConflict=false;
 const $=id=>document.getElementById(id);
+try{const s=localStorage.getItem(KEY);if(s){const local=JSON.parse(s);db=Object.assign(db,local);hasLocalData=Object.keys(local.seats||{}).length>0||local.next>1||local.event!=='Event Nation';localHasPhones=Object.values(local.seats||{}).some(seat=>seat.phone)}}catch(e){}
+const setStatus=text=>{$('saved').textContent=text};
+async function readApiResponse(response,path){
+ const body=await response.text();
+ try{return JSON.parse(body)}catch{
+  if(/^\s*</.test(body))throw new Error(`${path} returned an HTML page instead of JSON. Run with Vercel (vercel dev) or deploy to Vercel; static hosting only supports local-device saves.`);
+  throw new Error(`${path} returned an invalid response (HTTP ${response.status}).`);
+ }
+}
+function save(){
+ let localSaveError='';
+ try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){localSaveError=e.message}
+ if(!remoteReady){setStatus(localSaveError?'Local save failed: '+localSaveError:'Saved on this device only · shared server unavailable');return}
+ if(hasConflict)return;
+ setStatus('Syncing shared bookings…');
+ pendingSaves++;
+ saveQueue=saveQueue.then(async()=>{
+  if(hasConflict)return;
+  const response=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:db,version:serverVersion})});
+  const result=await readApiResponse(response,'/api/state');
+  if(response.status===409){
+   hasConflict=true;db=result.state;serverVersion=result.version;isAdmin=result.isOrganizer;updateOrganizerButton();render();setStatus(result.error);return;
+  }
+  if(!response.ok)throw new Error(result.error||'Shared save failed.');
+  serverVersion=result.version;serverInitialized=true;setStatus(localSaveError?'Shared and saved on server · local backup unavailable':'Shared and saved on server');
+ }).catch(error=>{setStatus('Shared save failed: '+error.message)}).finally(()=>{pendingSaves--});
+}
+const units=[];for(let i=1;i<=24;i++)units.push({id:'S'+i,t:'Sofa',n:i,cap:2});for(let i=1;i<=56;i++)units.push({id:'T'+i,t:'Table',n:i,cap:6});
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const label=(u,i)=>u.t+' '+u.n+' · Seat '+i;
 const cnt=u=>{let c=0;for(let i=1;i<=u.cap;i++)if(db.seats[u.id+'-'+i])c++;return c};
@@ -59,6 +125,7 @@ function render(){
  $('g2').innerHTML=units.filter(u=>u.t==='Table').map(renderUnit).join('');
  units.forEach(u=>{tot+=u.cap});Object.values(db.seats).forEach(s=>{b++;if(s.pass)p++});
  $('s1').textContent=b;$('s2').textContent=tot-b;$('s3').textContent=p;$('s4').textContent=tot?Math.round(b/tot*100)+'%':'0%';
+ if(typeof renderPlanner==='function')renderPlanner();
  if(cur)renderM();
 }
 function openM(id){cur=id;$('m').style.display='flex';renderM()}
@@ -67,12 +134,12 @@ function renderM(){
  const u=units.find(x=>x.id===cur);let h=`<div class="top"><h1>${u.t} ${u.n}</h1><button onclick="closeM()">Close ✕</button></div>`;
  for(let i=1;i<=u.cap;i++){const k=u.id+'-'+i,s=db.seats[k];
   h+=`<div class="seat"><b>Seat ${i}</b> `;
-  if(!s)h+=`<span style="color:var(--mu)">free</span><div class="r"><input id="n${i}" placeholder="Guest name"><input id="p${i}" placeholder="Phone" inputmode="tel"><button class="p" onclick="book('${k}',${i})">Book</button></div>`;
-  else h+=`${s.pass?`<span class="pass">${s.pass}</span>`:''}<div>${esc(s.name)}${s.phone?' · '+esc(s.phone):''}</div><div class="r">${s.pass?`<button onclick="printPass('${k}')">Print pass</button>`:`<button class="p" onclick="issue('${k}')">Issue pass</button>`}<button class="d" onclick="cancel('${k}')">Cancel</button></div>`;
+  if(!s)h+=`<span style="color:var(--mu)">free</span><div class="r"><input id="n${i}" placeholder="Guest name">${isAdmin?`<input id="p${i}" placeholder="Phone (private)" inputmode="tel">`:''}<button class="p" onclick="book('${k}',${i})">Book</button></div>`;
+  else h+=`${s.pass?`<span class="pass">${s.pass}</span>`:''}<div>${esc(s.name)}${isAdmin&&s.phone?' · '+esc(s.phone):''}</div><div class="r">${s.pass?`<button onclick="printPass('${k}')">Print pass</button>`:`<button class="p" onclick="issue('${k}')">Issue pass</button>`}<button class="d" onclick="cancel('${k}')">Cancel</button></div>`;
   h+='</div>'}
  $('mb').innerHTML=h;
 }
-function book(k,i){const n=$('n'+i).value.trim();if(!n){$('n'+i).focus();return}db.seats[k]={name:n,phone:$('p'+i).value.trim(),pass:null};save();render()}
+function book(k,i){const n=$('n'+i).value.trim();if(!n){$('n'+i).focus();return}db.seats[k]={name:n,phone:isAdmin?$('p'+i).value.trim():'',pass:null};save();render()}
 function issue(k){db.seats[k].pass='EN-'+String(db.next++).padStart(4,'0');save();render();printPass(k)}
 function cancel(k){delete db.seats[k];save();render()}
 function printPass(k){
@@ -82,18 +149,64 @@ function printPass(k){
 }
 function search(){
  const q=$('q').value.trim().toLowerCase(),r=$('res');if(!q){r.hidden=true;return}
- const m=Object.entries(db.seats).filter(([k,s])=>(s.name+' '+s.phone+' '+(s.pass||'')).toLowerCase().includes(q)).slice(0,8);
+ const m=Object.entries(db.seats).filter(([k,s])=>(s.name+' '+(isAdmin?s.phone||'':'')+' '+(s.pass||'')).toLowerCase().includes(q)).slice(0,8);
  r.hidden=false;r.innerHTML=m.length?m.map(([k,s])=>{const u=units.find(x=>x.id===k.split('-')[0]);return `<div onclick="openM('${u.id}')">${esc(s.name)} — ${label(u,k.split('-')[1])} ${s.pass?'· '+s.pass:''}</div>`}).join(''):'<div>No match</div>';
 }
 function exportSeats(){
  const quote=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
  const rows=[['Event','Seat type','Unit','Seat','Status','Guest name','Phone','Pass number']];
- units.forEach(u=>{for(let i=1;i<=u.cap;i++){const s=db.seats[u.id+'-'+i];rows.push([db.event,u.t,u.n,i,s?'Booked':'Available',s?.name||'',s?.phone||'',s?.pass||''])}});
+ units.forEach(u=>{for(let i=1;i<=u.cap;i++){const s=db.seats[u.id+'-'+i];rows.push([db.event,u.t,u.n,i,s?'Booked':'Available',s?.name||'',isAdmin?s?.phone||'':'',s?.pass||''])}});
  const csv='\uFEFF'+rows.map(row=>row.map(quote).join(',')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
  const link=document.createElement('a');link.href=url;link.download=(db.event||'event').replace(/[^a-z0-9_-]+/gi,'_')+'_all_seats.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 $('ev').oninput=e=>{db.event=e.target.value;save()};
 function toggleTheme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'}
-render();
-</script></body></html>
+function updateOrganizerButton(){$('organizer').textContent=isAdmin?'Organizer: signed in · Log out':'Organizer access';$('q').placeholder=isAdmin?'Search guest name, phone or pass number...':'Search guest name or pass number...'}
+async function requestState(){
+ const response=await fetch('/api/state',{cache:'no-store'});const result=await readApiResponse(response,'/api/state');
+ if(!response.ok)throw new Error(result.error||'Unable to load shared bookings.');
+ serverVersion=result.version;serverInitialized=result.initialized;isAdmin=result.isOrganizer;remoteReady=true;updateOrganizerButton();
+ return result;
+}
+async function loadShared(){
+ try{
+  const result=await requestState();
+  if(result.initialized){db=result.state;render();try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}setStatus('Connected · shared bookings are up to date');return}
+  if(!hasLocalData)db=result.state;
+  render();
+  if(!hasLocalData){setStatus('Connected · ready to share bookings');return}
+  if(localHasPhones&&!isAdmin){setStatus('Organizer sign-in required to migrate private phone numbers');return}
+  save();
+ }catch(error){remoteReady=false;render();setStatus('Local only · shared server unavailable: '+error.message)}
+}
+async function toggleOrganizer(){
+ try{
+  if(isAdmin){
+   const response=await fetch('/api/auth',{method:'DELETE'});const result=await readApiResponse(response,'/api/auth');
+   if(!response.ok)throw new Error(result.error||'Could not sign out.');
+   isAdmin=false;Object.values(db.seats).forEach(seat=>delete seat.phone);updateOrganizerButton();render();
+   try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}
+   await loadShared();return;
+  }
+  const pin=prompt('Enter organizer PIN to view and manage private phone numbers.');
+  if(pin===null)return;
+  const response=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
+  const result=await readApiResponse(response,'/api/auth');if(!response.ok)throw new Error(result.error||'Organizer sign-in failed.');
+  isAdmin=true;updateOrganizerButton();
+  if(serverInitialized)await loadShared();
+  else{remoteReady=true;if(localHasPhones)save();else setStatus('Organizer signed in · shared server ready')}
+ }catch(error){setStatus('Organizer access failed: '+error.message)}
+}
+async function refreshShared(){
+ if(!remoteReady){loadShared();return}
+ if(pendingSaves||cur||document.activeElement===$('ev'))return;
+ try{
+  const previousVersion=serverVersion,previousAdmin=isAdmin;
+  const result=await requestState();
+  if(result.version!==previousVersion||result.isOrganizer!==previousAdmin){db=result.state;render();try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}setStatus(result.isOrganizer?'Updated from shared server':'Phone visibility is now organizer-only')}
+ }catch(error){setStatus('Shared refresh failed: '+error.message)}
+}
+loadShared();
+setInterval(refreshShared,10000);
+</script><script src="planner.js"></script></body></html>

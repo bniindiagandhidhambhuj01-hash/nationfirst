@@ -1,0 +1,11 @@
+{
+  "name": "nationfirst-seating-manager",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.35.3"
+  }
+}
