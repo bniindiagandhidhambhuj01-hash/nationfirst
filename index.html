@@ -19,6 +19,7 @@ button:focus-visible,.u:focus-visible{outline:3px solid color-mix(in srgb,var(--
 .toolbar{display:flex;gap:10px;align-items:center;margin:26px 0 12px}.toolbar input{max-width:600px}.legend{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:10px 0 22px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;border:1px solid}
 .section-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:27px 0 12px}.section-title .sub{margin-left:auto}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:10px}
+.sofa-layout{display:grid;gap:26px}.sofa-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .u{min-height:66px;border:1px solid var(--freeb);background:var(--free);border-radius:10px;padding:11px 5px;text-align:center;cursor:pointer;color:var(--tx);transition:transform .15s,box-shadow .15s,border-color .15s}
 .u:hover{transform:translateY(-2px);box-shadow:0 6px 16px #17372818}.u.part{border-color:var(--partb);background:var(--part)}.u.full{border-color:var(--fullb);background:var(--full)}
 .u b{display:block;font-size:13px}.u small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
@@ -30,14 +31,14 @@ button:focus-visible,.u:focus-visible{outline:3px solid color-mix(in srgb,var(--
 .pass{display:inline-block;background:var(--ac);color:var(--acx);border-radius:5px;padding:2px 8px;font-size:12px;font-weight:650}
 #pass{display:none}
 @media(max-width:760px){body{padding:18px 14px}.top{align-items:flex-start;padding:15px}.brand{gap:13px}.brand-logo{width:124px;max-height:62px}.actions{width:100%;flex-wrap:wrap}.saved{margin-right:auto}.stats{gap:9px}.stat{padding:14px}.stat b{font-size:25px}.toolbar{align-items:stretch;flex-direction:column}.toolbar input{max-width:none}.section-title .sub{margin-left:0}}
-@media(max-width:440px){.brand{width:100%;align-items:center}.brand-logo{width:112px}.event-wrap{min-width:0;flex:1}#ev{max-width:100%;font-size:17px}.actions button{padding:9px 10px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px}.stat b{font-size:23px}.grid{grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}}
+@media(max-width:440px){.brand{width:100%;align-items:center}.brand-logo{width:112px}.event-wrap{min-width:0;flex:1}#ev{max-width:100%;font-size:17px}.actions button{padding:9px 10px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px}.stat b{font-size:23px}.grid{grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}.sofa-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
 @media print{body>*:not(#pass){display:none!important}#pass{display:block;color:#000;background:#fff;border:3px dashed #000;border-radius:14px;width:340px;margin:20px auto;padding:20px;text-align:center;font-family:system-ui,sans-serif}#pass h3{margin:0 0 4px;font-size:22px}#pass .n{font-size:26px;font-weight:800;margin:10px 0}#pass .no{font:700 20px monospace;letter-spacing:.15em;border-top:2px solid #000;margin-top:12px;padding-top:10px}}
 </style></head><body>
 <header class="top"><div class="brand"><img class="brand-logo" src="NATION%20FIRST%20SPONSORS.png" alt="Nation First"><div class="event-wrap"><span class="eyebrow">SEATING MANAGER</span><input id="ev" aria-label="Event name"></div></div><div class="actions"><span class="saved" id="saved" role="status">Saved on this device</span><button onclick="toggleTheme()" aria-label="Toggle color theme">◐ Theme</button><button class="p" onclick="exportSeats()" aria-label="Export all seats to an Excel-compatible file">↓ Export Excel</button></div></header>
 <div class="stats"><div class="stat"><b id="s1"></b><span>Seats booked</span></div><div class="stat"><b id="s2"></b><span>Seats available</span></div><div class="stat"><b id="s3"></b><span>Passes issued</span></div><div class="stat"><b id="s4"></b><span>Occupancy</span></div></div>
 <div class="toolbar"><input id="q" placeholder="Search guest name, phone or pass number..." aria-label="Search bookings" oninput="search()"></div><div id="res" hidden></div>
 <div class="legend"><span><i style="background:var(--free);border-color:var(--freeb)"></i>Free</span><span><i style="background:var(--part);border-color:var(--partb)"></i>Partly booked</span><span><i style="background:var(--full);border-color:var(--fullb)"></i>Full</span></div>
-<div class="section-title"><h2>Sofas</h2><p class="sub">24 units · 2 seats each</p></div><div class="grid" id="g1"></div>
+<div class="section-title"><h2>Sofas</h2><p class="sub">24 units · 2 seats each</p></div><div class="sofa-layout" id="g1"></div>
 <div class="section-title"><h2>Tables</h2><p class="sub">56 units · 6 seats each</p></div><div class="grid" id="g2"></div>
 <div id="m" onclick="if(event.target===this)closeM()"><div class="box" id="mb"></div></div>
 <div id="pass"></div>
@@ -50,9 +51,12 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const label=(u,i)=>u.t+' '+u.n+' · Seat '+i;
 const cnt=u=>{let c=0;for(let i=1;i<=u.cap;i++)if(db.seats[u.id+'-'+i])c++;return c};
+const renderUnit=u=>{const c=cnt(u);return `<div class="u ${c===u.cap?'full':c?'part':''}" onclick="openM('${u.id}')"><b>${u.t} ${u.n}</b><small>${c}/${u.cap}</small></div>`};
 function render(){
  $('ev').value=db.event;let b=0,p=0,tot=0;
- [['Sofa','g1'],['Table','g2']].forEach(([t,g])=>{$(g).innerHTML=units.filter(u=>u.t===t).map(u=>{const c=cnt(u);return `<div class="u ${c===u.cap?'full':c?'part':''}" onclick="openM('${u.id}')"><b>${u.t[0]==='S'?'Sofa':'Table'} ${u.n}</b><small>${c}/${u.cap}</small></div>`}).join('')});
+ const sofas=units.filter(u=>u.t==='Sofa');
+ $('g1').innerHTML=Array.from({length:Math.ceil(sofas.length/4)},(_,row)=>`<div class="sofa-row">${sofas.slice(row*4,row*4+4).map(renderUnit).join('')}</div>`).join('');
+ $('g2').innerHTML=units.filter(u=>u.t==='Table').map(renderUnit).join('');
  units.forEach(u=>{tot+=u.cap});Object.values(db.seats).forEach(s=>{b++;if(s.pass)p++});
  $('s1').textContent=b;$('s2').textContent=tot-b;$('s3').textContent=p;$('s4').textContent=tot?Math.round(b/tot*100)+'%':'0%';
  if(cur)renderM();
